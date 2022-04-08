@@ -24,6 +24,17 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         },
       },
       {
+        name: 'PAYMENTS_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://admin:admin@localhost:5672'],
+          queue: 'payments_microservice_queue',
+          queueOptions: {
+            durable: false,
+          },
+        },
+      },
+      {
         name: 'PRODUCTS_SERVICE',
         transport: Transport.RMQ,
         options: {

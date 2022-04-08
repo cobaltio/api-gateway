@@ -22,6 +22,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import { UserDocument } from './schemas/user.schema';
 import { User } from './decorators/user.decorator';
 import { CreateNftDto } from './schemas/create-nft.dto';
+import { CreateListingDto } from './schemas/create-listing.dto';
 
 type Request = Express.Request & {
   user: UserDocument;
@@ -34,6 +35,7 @@ type Request = Express.Request & {
 export class AppController {
   constructor(
     @Inject('USERS_SERVICE') private users_microservice: ClientProxy,
+    @Inject('PAYMENTS_SERVICE') private payments_microservice: ClientProxy,
     @Inject('PRODUCTS_SERVICE') private products_microservice: ClientProxy,
   ) {}
 
@@ -85,10 +87,11 @@ export class AppController {
       });
   }
 
-  // @UseInterceptors(ClassSerializerInterceptor)
-  // @UseGuards(AuthenticatedGuard)
-  // @Post('/home')
-  // getHome(@Request() req): UserEntity {
-  //   return new UserEntity(req.user);
-  // }
+  // WIP
+  @UseInterceptors(ClassSerializerInterceptor)
+  @UseGuards(AuthenticatedGuard)
+  @Post('/payments/create-listing')
+  createListing(@Body() body: CreateListingDto, @User() user: UserDocument) {
+    this.payments_microservice.send({ cmd: 'create-listing' }, body);
+  }
 }
