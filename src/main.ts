@@ -68,6 +68,7 @@ async function bootstrap() {
       forbidUnknownValues: true,
     }),
   );
+  app.enableCors();
   await app.startAllMicroservices();
   await app.listen(3000);
 }

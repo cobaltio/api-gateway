@@ -13,11 +13,22 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
     UsersModule,
     ClientsModule.register([
       {
-        name: 'NFT_SERVICE',
+        name: 'USERS_SERVICE',
         transport: Transport.RMQ,
         options: {
           urls: ['amqp://admin:admin@localhost:5672'],
-          queue: 'nft_queue',
+          queue: 'users_microservice_queue',
+          queueOptions: {
+            durable: false,
+          },
+        },
+      },
+      {
+        name: 'PRODUCTS_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: ['amqp://admin:admin@localhost:5672'],
+          queue: 'products_microservice_queue',
           queueOptions: {
             durable: false,
           },

@@ -4,7 +4,6 @@ import {
   Get,
   Post,
   UseGuards,
-  Body,
   HttpCode,
   HttpException,
   HttpStatus,
@@ -13,17 +12,20 @@ import {
   SerializeOptions,
   Query,
   Inject,
-  Res,
+  Body,
 } from '@nestjs/common';
 
-import { AppService } from './app.service';
-import { CreateUserDto } from './schemas/create-user.dto';
-import { UsersService } from './users/users.service';
 import { AuthenticatedGuard } from './common/guards/authenticated.guard';
 import { LoginGuard } from './common/guards/login.guard';
 import { UserEntity } from './schemas/user.entity';
 import { ClientProxy } from '@nestjs/microservices';
-import { Response } from 'express';
+import { UserDocument } from './schemas/user.schema';
+import { User } from './decorators/user.decorator';
+import { CreateNftDto } from './schemas/create-nft.dto';
+
+type Request = Express.Request & {
+  user: UserDocument;
+};
 
 @SerializeOptions({
   excludePrefixes: ['_'],
@@ -31,59 +33,62 @@ import { Response } from 'express';
 @Controller()
 export class AppController {
   constructor(
-    private readonly appService: AppService,
-    private usersService: UsersService,
-    @Inject('NFT_SERVICE') private client: ClientProxy,
+    @Inject('USERS_SERVICE') private users_microservice: ClientProxy,
+    @Inject('PRODUCTS_SERVICE') private products_microservice: ClientProxy,
   ) {}
 
   @HttpCode(200)
   @UseGuards(LoginGuard)
   @Post('auth/login')
-  async login(@Request() req) {}
+  async login(@Request() req, @Body() body) {}
 
   @UseGuards(AuthenticatedGuard)
   @Post('/auth/logout')
   async logout(@Request() req) {
+    console.log('logged out');
     req.logout();
   }
 
   @Get('auth/getnonce')
   async getNonce(@Query('public_address') public_addr) {
     const noncePromise = new Promise((resolve, reject) => {
-      this.client.send<string>({ cmd: 'get-nonce' }, public_addr).subscribe(
-        (nonce) => {
-          resolve({ public_address: public_addr, nonce: nonce });
-        },
-        (err) => {
-          reject(
-            new HttpException('Malformed Request', HttpStatus.BAD_REQUEST),
-          );
-        },
-      );
+      this.users_microservice
+        .send<string>({ cmd: 'get-nonce' }, public_addr)
+        .subscribe({
+          next: (nonce) => {
+            resolve({ public_address: public_addr, nonce: nonce });
+          },
+          error: (err) => {
+            reject(
+              new HttpException('Malformed Request', HttpStatus.BAD_REQUEST),
+            );
+          },
+        });
     });
     return noncePromise;
   }
 
-  @Post('auth/register')
-  async register(@Body() user: CreateUserDto) {
-    const is_created = await this.usersService.createUser(user);
-    if (!is_created) {
-      throw new HttpException(
-        'User with email/username already exists',
-        HttpStatus.FORBIDDEN,
-      );
-    }
-  }
-
   @UseInterceptors(ClassSerializerInterceptor)
   @UseGuards(AuthenticatedGuard)
-  @Get('/home')
-  getHome(@Request() req): UserEntity {
-    return new UserEntity(req.user);
+  @Post('/products/create-nft')
+  createNFT(@Body() body: CreateNftDto, @User() user: UserDocument) {
+    this.products_microservice
+      .send<any>(
+        { cmd: 'create-nft' },
+        {
+          ...body,
+          creator: user.public_address,
+        },
+      )
+      .subscribe({
+        next: (nft) => console.log(nft),
+      });
   }
 
-  @Get('/')
-  getHello() {
-    return 'Hello World!';
-  }
+  // @UseInterceptors(ClassSerializerInterceptor)
+  // @UseGuards(AuthenticatedGuard)
+  // @Post('/home')
+  // getHome(@Request() req): UserEntity {
+  //   return new UserEntity(req.user);
+  // }
 }

@@ -10,11 +10,11 @@ import { SessionSerializer } from './session.serializer';
   imports: [
     ClientsModule.register([
       {
-        name: 'NFT_SERVICE',
+        name: 'USERS_SERVICE',
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://admin@admin:localhost:5672'],
-          queue: 'nft_queue',
+          urls: ['amqp://admin:admin@localhost:5672'],
+          queue: 'users_microservice_queue',
           queueOptions: {
             durable: false,
           },

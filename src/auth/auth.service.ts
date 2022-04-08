@@ -14,20 +14,22 @@ import {
 
 @Injectable()
 export class AuthService {
-  constructor(@Inject('NFT_SERVICE') private client: ClientProxy) {}
+  constructor(
+    @Inject('USERS_SERVICE') private users_microservice: ClientProxy,
+  ) {}
 
   async validateUser(
-    public_addr: string,
+    public_address: string,
     digital_sign: string,
   ): Promise<UserDTO | null> {
     return new Promise<UserDTO | null>((resolve, reject) => {
       try {
-        this.client
-          .send<UserDTO>({ cmd: 'find-user' }, public_addr)
+        this.users_microservice
+          .send<UserDTO>({ cmd: 'find-user' }, public_address)
           .subscribe((user) => {
             if (user) {
               const msg = `I am signing my one-time nonce: ${user.nonce}`;
-              const msgBuffer = toBuffer(msg);
+              const msgBuffer = Buffer.from(msg);
               const msgHash = hashPersonalMessage(msgBuffer);
               const signatureParams = fromRpcSig(digital_sign);
 
@@ -40,10 +42,13 @@ export class AuthService {
               const addressBuffer = publicToAddress(public_key);
               const address = bufferToHex(addressBuffer);
 
-              if (address.toLowerCase() === public_addr.toLowerCase())
+              if (address.toLowerCase() === public_address.toLowerCase()) {
+                this.users_microservice
+                  .send({ cmd: 'update-nonce' }, public_address)
+                  .subscribe();
                 resolve(user);
-              else resolve(null); // if the addresses don't match
-            } else resolve(null); // if no user with public_address found
+              } else resolve(null); // if the addresses don't match
+            } else resolve(null); // if no user with public_addresses found
           });
       } catch (e) {
         reject(e);
