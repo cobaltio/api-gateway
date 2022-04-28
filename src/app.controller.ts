@@ -13,6 +13,7 @@ import {
   Query,
   Inject,
   Body,
+  Param,
 } from '@nestjs/common';
 
 import { AuthenticatedGuard } from './common/guards/authenticated.guard';
@@ -74,17 +75,13 @@ export class AppController {
   @UseGuards(AuthenticatedGuard)
   @Post('/products/create-nft')
   createNFT(@Body() body: CreateNftDto, @User() user: UserDocument) {
-    this.products_microservice
-      .send<any>(
-        { cmd: 'create-nft' },
-        {
-          ...body,
-          creator: user.public_address,
-        },
-      )
-      .subscribe({
-        next: (nft) => console.log(nft),
-      });
+    return this.products_microservice.send<any>(
+      { cmd: 'create-nft' },
+      {
+        ...body,
+        creator: user.public_address,
+      },
+    );
   }
 
   // WIP
@@ -93,5 +90,14 @@ export class AppController {
   @Post('/payments/create-listing')
   createListing(@Body() body: CreateListingDto, @User() user: UserDocument) {
     this.payments_microservice.send({ cmd: 'create-listing' }, body);
+  }
+
+  @Get('/products/metadata/:id')
+  getProductMetadata(@Param('id') id: string) {}
+
+  @Get('/currentUser')
+  @UseGuards(AuthenticatedGuard)
+  currentUser(@User() user: UserDocument) {
+    return user.public_address;
   }
 }
