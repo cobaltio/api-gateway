@@ -1,3 +1,5 @@
+import { IsNotEmpty } from 'class-validator';
+
 class Metadata {
   name: string;
   image: string;
@@ -8,5 +10,6 @@ class Metadata {
 }
 
 export class CreateNftDto {
+  @IsNotEmpty()
   metadata: Metadata;
 }
