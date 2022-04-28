@@ -65,7 +65,7 @@ async function bootstrap() {
         This is a Moderate vulnerability that can lead to SQL and 
         Cross-Site Scripting Attacks
       */
-      forbidUnknownValues: true,
+      // forbidUnknownValues: true,
     }),
   );
   app.enableCors();
