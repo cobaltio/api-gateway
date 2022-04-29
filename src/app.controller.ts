@@ -14,6 +14,8 @@ import {
   Inject,
   Body,
   Param,
+  UploadedFile,
+  Put,
 } from '@nestjs/common';
 
 import { AuthenticatedGuard } from './common/guards/authenticated.guard';
@@ -24,6 +26,8 @@ import { UserDocument } from './schemas/user.schema';
 import { User } from './decorators/user.decorator';
 import { CreateNftDto } from './schemas/create-nft.dto';
 import { CreateListingDto } from './schemas/create-listing.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { type } from 'os';
 
 type Request = Express.Request & {
   user: UserDocument;
@@ -74,7 +78,11 @@ export class AppController {
   @UseInterceptors(ClassSerializerInterceptor)
   @UseGuards(AuthenticatedGuard)
   @Post('/products/create-nft')
-  createNFT(@Body() body: CreateNftDto, @User() user: UserDocument) {
+  createNFT(
+    @Body() body,
+    @UploadedFile() file: Express.Multer.File,
+    @User() user: UserDocument,
+  ) {
     return this.products_microservice.send<any>(
       { cmd: 'create-nft' },
       {
@@ -82,6 +90,27 @@ export class AppController {
         creator: user.public_address,
       },
     );
+  }
+
+  @UseInterceptors(ClassSerializerInterceptor)
+  @UseInterceptors(FileInterceptor('file'))
+  @UseGuards(AuthenticatedGuard)
+  @Put('/products/create-nft/:id')
+  uploadNFTImage(
+    @Param('id') id: string,
+    @UploadedFile('file') file: Express.Multer.File,
+    @User() user: UserDocument,
+  ) {
+    this.products_microservice
+      .send<void>(
+        { cmd: 'upload-nft' },
+        {
+          creator: user.public_address,
+          file: file,
+          item_id: id,
+        },
+      )
+      .subscribe();
   }
 
   // WIP
