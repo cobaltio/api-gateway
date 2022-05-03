@@ -88,6 +88,7 @@ export class AppController {
       {
         ...body,
         creator: user.public_address,
+        owner: user.public_address,
       },
     );
   }
@@ -100,17 +101,28 @@ export class AppController {
     @Param('id') id: string,
     @UploadedFile('file') file: Express.Multer.File,
     @User() user: UserDocument,
-  ) {
-    this.products_microservice
-      .send<void>(
-        { cmd: 'upload-nft' },
-        {
-          creator: user.public_address,
-          file: file,
-          item_id: id,
-        },
-      )
-      .subscribe();
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.products_microservice
+        .send(
+          { cmd: 'upload-nft' },
+          {
+            creator: user.public_address,
+            file: file,
+            item_id: id,
+          },
+        )
+        .subscribe({
+          complete: () => {
+            resolve();
+          },
+          next: (_) => {
+            reject(
+              new HttpException('Malformed Request', HttpStatus.BAD_REQUEST),
+            );
+          },
+        });
+    });
   }
 
   // WIP
