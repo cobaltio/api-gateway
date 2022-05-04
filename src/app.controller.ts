@@ -125,12 +125,29 @@ export class AppController {
     });
   }
 
-  // WIP
   @UseInterceptors(ClassSerializerInterceptor)
   @UseGuards(AuthenticatedGuard)
   @Post('/payments/create-listing')
-  createListing(@Body() body: CreateListingDto, @User() user: UserDocument) {
-    this.payments_microservice.send({ cmd: 'create-listing' }, body);
+  createListing(
+    @Body() listing: CreateListingDto,
+    @User() user: UserDocument,
+  ): Promise<void> {
+    listing.createdBy = user.public_address;
+    return new Promise((resolve, reject) => {
+      this.payments_microservice
+        .send({ cmd: 'create-listing' }, listing)
+        .subscribe({
+          next: (result) => {
+            resolve(result);
+          },
+          error: (err) => {
+            reject(new HttpException(err.message, HttpStatus.BAD_REQUEST));
+          },
+          complete: () => {
+            resolve();
+          },
+        });
+    });
   }
 
   @Get('/products/metadata/:id')
