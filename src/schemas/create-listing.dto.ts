@@ -3,11 +3,13 @@ import { IsNotEmpty } from 'class-validator';
 
 export class CreateListingDto {
   @IsNotEmpty()
-  item_id: number;
+  item_id: string;
 
   @IsNotEmpty()
   price: number;
 
   @Optional()
   expiresAt: number;
+
+  createdBy: string;
 }
