@@ -116,10 +116,8 @@ export class AppController {
           complete: () => {
             resolve();
           },
-          next: (_) => {
-            reject(
-              new HttpException('Malformed Request', HttpStatus.BAD_REQUEST),
-            );
+          next: (err) => {
+            reject(new HttpException(err.message, HttpStatus.BAD_REQUEST));
           },
         });
     });
