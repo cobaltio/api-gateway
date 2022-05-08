@@ -148,6 +148,27 @@ export class AppController {
     });
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
+  @UseGuards(AuthenticatedGuard)
+  @Post('/payments/fill-listing')
+  fillListing(
+    @Body('listing-id') listing_id: string,
+    @User() user: UserDocument,
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.payments_microservice
+        .send(
+          { cmd: 'fill-listing' },
+          { buyer: user.public_address, listing_id },
+        )
+        .subscribe({
+          next: (res) => resolve(res),
+          error: (err) => {
+            reject(new HttpException(err.message, HttpStatus.BAD_REQUEST));
+          },
+        });
+    });
+  }
   @Get('/products/metadata/:id')
   getProductMetadata(@Param('id') id: string) {}
 
