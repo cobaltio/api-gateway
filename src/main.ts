@@ -37,7 +37,6 @@ async function bootstrap() {
     logger.log('Connected to redis successfully');
   });
 
-  app.enableCors();
   app.use(
     session({
       store: new RedisStore({ client: redisClient }),
@@ -68,7 +67,10 @@ async function bootstrap() {
       // forbidUnknownValues: true,
     }),
   );
-  app.enableCors();
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
   await app.startAllMicroservices();
   await app.listen(3000);
 }

@@ -16,6 +16,8 @@ import {
   Param,
   UploadedFile,
   Put,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
 
 import { AuthenticatedGuard } from './common/guards/authenticated.guard';
@@ -27,7 +29,10 @@ import { User } from './decorators/user.decorator';
 import { CreateNftDto } from './schemas/create-nft.dto';
 import { CreateListingDto } from './schemas/create-listing.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { type } from 'os';
+import * as fs from 'fs';
+import { Response } from 'express';
+import { lastValueFrom } from 'rxjs';
+import { Readable } from 'stream';
 
 type Request = Express.Request & {
   user: UserDocument;
@@ -49,10 +54,10 @@ export class AppController {
   @Post('auth/login')
   async login(@Request() req, @Body() body) {}
 
+  @HttpCode(200)
   @UseGuards(AuthenticatedGuard)
   @Post('/auth/logout')
   async logout(@Request() req) {
-    console.log('logged out');
     req.logout();
   }
 
@@ -117,6 +122,7 @@ export class AppController {
             resolve();
           },
           next: (err) => {
+            console.log(err.message);
             reject(new HttpException(err.message, HttpStatus.BAD_REQUEST));
           },
         });
@@ -169,8 +175,43 @@ export class AppController {
         });
     });
   }
+
+  // WIP
   @Get('/products/metadata/:id')
   getProductMetadata(@Param('id') id: string) {}
+
+  @Get('/products/media/:id')
+  async getProductMedia(@Param('id') id: string, @Res() response: Response) {
+    const res = await lastValueFrom(
+      this.products_microservice.send({ cmd: 'get-media' }, id),
+    );
+    response.set({
+      'Content-Type': res.mimetype,
+    });
+    const buffer = Buffer.from(res.file.data);
+    const stream = Readable.from(buffer);
+    stream.pipe(response);
+  }
+
+  @Get('/products/explore')
+  getExplore() {
+    return this.products_microservice.send({ cmd: 'find-nft' }, []);
+  }
+
+  @Get('/products/nft/:id')
+  getOneNft(@Param('id') id: string) {
+    return this.products_microservice.send({ cmd: 'find-nft' }, [
+      { item_id: id },
+    ]);
+  }
+
+  @UseGuards(AuthenticatedGuard)
+  @Get('/products/account/')
+  getNFTForAccount(@User() user: UserDocument) {
+    return this.products_microservice.send({ cmd: 'find-nft' }, [
+      { owner: user.public_address },
+    ]);
+  }
 
   @Get('/currentUser')
   @UseGuards(AuthenticatedGuard)
